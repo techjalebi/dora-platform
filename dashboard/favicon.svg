@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#0f172a"/>
+  <!-- Rising trend line -->
+  <polyline
+    points="4,24 10,18 16,20 22,10 28,6"
+    fill="none"
+    stroke="#10b981"
+    stroke-width="2.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Dot at peak -->
+  <circle cx="28" cy="6" r="2.5" fill="#10b981"/>
+</svg>
