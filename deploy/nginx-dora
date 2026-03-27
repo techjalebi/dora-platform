@@ -1,0 +1,18 @@
+server {
+    listen 80;
+    server_name dora.techjalebi.com;
+
+    root /home/ubuntu/dora/dashboard;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # Jira CORS proxy — forwards /jira/* to the local Python proxy on port 5002
+    location /jira/ {
+        proxy_pass http://127.0.0.1:5002/jira/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}

@@ -8,67 +8,104 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 1. **Simulation Engine** (`simulation/`) — Python scripts that populate GitHub and Jira Cloud with 6 months of realistic DevOps activity
 2. **Dashboard** (`dashboard/`) — Vanilla HTML/CSS/JS single-page app that reads from GitHub + Jira REST APIs and renders DORA metric trend charts
 
-## Planned Repository Layout
+## Repository Layout
 
 ```
-dora-platform/          ← this repo
-├── simulation/         ← Python scripts (Phases 2–3)
-├── dashboard/          ← HTML/CSS/JS frontend (Phases 4–5)
-├── proxy/              ← Local Python proxy for Jira CORS (Phase 4)
-└── docs/               ← Architecture PDFs + project_plan.md
+dora-platform/
+├── simulation/
+│   ├── config.py           ← loads .env, exposes typed constants
+│   ├── github_sim.py       ← creates backdated commits/PRs/releases in dora-demo-app
+│   ├── jira_sim.py         ← creates stories + incidents in Jira DORA project
+│   └── requirements.txt
+├── dashboard/
+│   ├── index.html          ← single-page app entry point
+│   ├── css/style.css
+│   └── js/
+│       ├── config.js       ← repo name, proxy URL, sim timeline params
+│       ├── api.js          ← fetch() wrappers for GitHub + Jira APIs
+│       ├── metrics.js      ← pure DORA metric computation functions
+│       ├── charts.js       ← Chart.js setup, band annotation overlays
+│       └── app.js          ← boot, toggle, date picker, scorecard wiring
+├── proxy/
+│   └── server.py           ← Python CORS proxy for Jira (localhost:8080)
+├── docs/
+│   ├── generate_docs.py    ← ReportLab script — regenerates all PDFs
+│   ├── project_plan.md     ← phase-by-phase task tracker (source of truth)
+│   └── *.pdf               ← generated architecture + status docs
+├── start_dashboard.sh      ← opens proxy + dashboard server in two terminals
+├── .env                    ← secrets (gitignored)
+└── .env.example            ← template
 ```
 
-Target repo populated by the simulator: **dora-demo-app** (separate GitHub repo).
+Target repo populated by the simulator: **techjalebi/dora-demo-app** (separate GitHub repo).
 
-## Tech Stack
-
-- **Simulation**: Python 3, PyGithub, requests, python-dateutil
-- **Dashboard**: Vanilla HTML/CSS/JS, Chart.js (CDN), no build tools
-- **PDF docs**: ReportLab (`docs/generate_docs.py`)
-- **APIs**: GitHub REST API, Jira Cloud REST API (direct calls)
-- **Jira CORS workaround**: local `proxy/server.py` — dashboard calls `localhost:8080/jira/*`
-
-## Regenerating Architecture Docs
+## Running the Dashboard
 
 ```bash
-cd /path/to/dora-platform
+./start_dashboard.sh        # opens both terminals + browser automatically
+```
+
+Or manually:
+```bash
+# Terminal 1
+python3 proxy/server.py     # Jira CORS proxy on localhost:8080
+
+# Terminal 2
+python3 -m http.server 3000 --directory dashboard
+```
+
+## Regenerating Docs
+
+```bash
 python3 docs/generate_docs.py
 ```
 
-Outputs four PDFs to `docs/`: `0.1_project_architecture.pdf` through `0.4_build_plan.pdf`.
+Outputs PDFs to `docs/`: architecture docs (`0.1`–`0.4`) + live status doc (`1.0_project_status.pdf`).
+Always run this after updating `docs/project_plan.md` or `docs/generate_docs.py`.
+
+## Running the Simulation
+
+```bash
+python3 -m simulation.github_sim   # Phase 2 — populate dora-demo-app
+python3 -m simulation.jira_sim     # Phase 3 — populate Jira DORA project
+```
+
+Both are idempotent — jira_sim.py skips issues whose summaries already exist.
 
 ## Key Design Decisions
 
-- **No framework, no build step** on the dashboard — plain `fetch()`, Chart.js via CDN, open `index.html` directly in a browser (or serve with `python3 -m http.server`)
-- **Backdated GitHub data**: simulation uses `GIT_AUTHOR_DATE` / `GIT_COMMITTER_DATE` env vars to create commits in the past; Jira timestamps are set via the REST API `created` field workaround
-- **Failure release convention**: releases named `vX.Y.Z-hotfix` are treated as failed deployments; corresponding Jira Incident tickets reference them via the `Linked Release` custom field
+- **No framework, no build step** on the dashboard — plain `fetch()`, Chart.js + flatpickr via CDN
+- **Backdated GitHub data**: simulation uses `GIT_AUTHOR_DATE` / `GIT_COMMITTER_DATE` env vars; GitHub release `published_at` timestamps cannot be backdated via the API — they all reflect when the sim ran
+- **Simulated date reconstruction**: `dashboard/js/config.js` stores `SIM_START` and `DEPLOY_INTERVAL_DAYS`; `api.js:buildReleaseMap()` reconstructs each release's simulated date from its sort index — same formula as `github_sim.py`
+- **Failure release convention**: releases named `vX.Y.Z-hotfix` are failed deployments; Incident tickets reference them via the `Linked Release` custom field
+- **Jira MTTR storage**: Jira Cloud cannot backdate transition timestamps — `SimulatedCreated` and `SimulatedResolved` ISO strings are stored in the Incident description; `api.js:parseDescriptionDate()` extracts them
+- **Jira search API**: use `POST /rest/api/3/search/jql` with `nextPageToken` pagination — the old `GET /rest/api/3/search` returns HTTP 410 Gone on Jira Cloud
 - **DORA metric sources**:
-  - Deployment Frequency → GitHub release tags count
-  - Lead Time → Jira `First Commit Date` custom field → story `Done` transition timestamp
-  - Change Failure Rate → Incident count / Release count per period
-  - MTTR → Jira Incident `Open` → `Resolved` transition delta
-
-## Build Plan Status
-
-Tracked in [`docs/project_plan.md`](docs/project_plan.md). Phase 0 (architecture) is complete; Phases 1–5 are pending. Update statuses there as work progresses.
+  - Deployment Frequency → GitHub release tag count per period
+  - Lead Time → `First Commit Date` custom field → release date (reconstructed)
+  - Change Failure Rate → Incident `Linked Release` tags / total releases per period
+  - MTTR → `SimulatedCreated` → `SimulatedResolved` in Incident description
 
 ## Jira Project
 
-- Project key: `DORA`
-- Custom fields required: `Deployment Version`, `First Commit Date`, `Incident Severity`, `Linked Release`
+- Project key: `DORA` (id: 10001)
+- Custom field IDs (created in Phase 1):
+  - `customfield_10039` — Deployment Version
+  - `customfield_10040` — First Commit Date
+  - `customfield_10041` — Incident Severity (options: P1, P2, P3)
+  - `customfield_10042` — Linked Release
+- Incident issue type id: `10008`
 - Incident workflow: Open → Investigating → Resolved
-- Story/Bug workflow: To Do → In Progress → In Review → Done
+- Story workflow: To Do → In Progress → In Review → Done
 
 ## DORA Performance Band Thresholds
 
-Used for chart overlay lines and scorecard classification in Phase 5:
-
 | Metric | Elite | High | Medium | Low |
 |---|---|---|---|---|
-| Deployment Frequency | Multiple/day | Weekly | Monthly | < Monthly |
-| Lead Time for Changes | < 1 hour | 1 day – 1 week | 1 week – 1 month | > 1 month |
-| Change Failure Rate | 0–5% | 5–10% | 10–15% | > 15% |
-| MTTR | < 1 hour | < 1 day | 1 day – 1 week | > 1 week |
+| Deployment Frequency | ≥ 7/week | ≥ 1/week | ≥ 1/month | < 1/month |
+| Lead Time for Changes | < 1 day | < 7 days | < 30 days | ≥ 30 days |
+| Change Failure Rate | ≤ 5% | ≤ 10% | ≤ 15% | > 15% |
+| MTTR | < 1 hour | < 24 hours | < 168 hours | ≥ 168 hours |
 
 ## Required Environment Variables
 
@@ -80,4 +117,12 @@ JIRA_BASE_URL=         # https://yoursite.atlassian.net
 JIRA_EMAIL=            # Atlassian account email
 JIRA_API_TOKEN=        # Jira API token (not password)
 JIRA_PROJECT_KEY=DORA
+GITHUB_DEMO_REPO=techjalebi/dora-demo-app
+SIM_START_DATE=2025-09-01
+SIM_END_DATE=2026-03-01
+SIM_FAILURE_RATE=0.15
 ```
+
+## Build Plan Status
+
+Tracked in [`docs/project_plan.md`](docs/project_plan.md). Phases 0–4 complete; Phase 5 in progress (5.5 Oracle VM deploy + 5.6 README pending).

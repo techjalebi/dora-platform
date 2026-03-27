@@ -515,10 +515,122 @@ def doc_04():
     print(f"  ✓ {path}")
 
 
+# ─────────────────────────────────────────────────────────
+# DOC 1.0 — Project Status (living document)
+# ─────────────────────────────────────────────────────────
+def doc_status():
+    path = "docs/1.0_project_status.pdf"
+    doc = SimpleDocTemplate(path, pagesize=A4,
+                            leftMargin=MARGIN, rightMargin=MARGIN,
+                            topMargin=MARGIN, bottomMargin=MARGIN)
+    story = []
+    story += header_block("DORA-STATUS-1.0", "Project Status",
+                          "Current phase completion across all build phases",
+                          date="2026-03-24")
+
+    DONE   = colors.HexColor("#065f46")
+    PEND   = colors.HexColor("#92400e")
+    DONE_BG = colors.HexColor("#d1fae5")
+    PEND_BG = colors.HexColor("#fef3c7")
+
+    def status_badge(s):
+        if s == "✅":
+            return Paragraph("<font color='#065f46'><b>✅ Complete</b></font>", S["body"])
+        elif s == "🔄":
+            return Paragraph("<font color='#1a56db'><b>🔄 In Progress</b></font>", S["body"])
+        return Paragraph("<font color='#92400e'>⬜ Pending</font>", S["body"])
+
+    phases = [
+        ("Phase 0 — Architecture & Planning", [
+            ("0.1", "Define project architecture and component diagram", "✅"),
+            ("0.2", "Define GitHub repo structure", "✅"),
+            ("0.3", "Define Jira project setup (issue types, fields, workflow)", "✅"),
+            ("0.4", "Define build plan and phase ordering", "✅"),
+        ]),
+        ("Phase 1 — Setup & Config", [
+            ("1.1", "Create dora-demo-app GitHub repo (simulation target)", "✅"),
+            ("1.2", "Create dora-platform GitHub repo (dashboard + scripts)", "✅"),
+            ("1.3", "Set up Jira Cloud project (DORA) with issue types and workflow", "✅"),
+            ("1.4", "Add custom Jira fields (Deployment Version, First Commit Date, Incident Severity, Linked Release)", "✅"),
+            ("1.5", "Write config.py with API tokens, date ranges, simulation parameters", "✅"),
+            ("1.6", "Create .env.example and .gitignore", "✅"),
+        ]),
+        ("Phase 2 — GitHub Simulation", [
+            ("2.1", "Write github_sim.py — backdated commits using GIT_AUTHOR_DATE / GIT_COMMITTER_DATE", "✅"),
+            ("2.2", "Script PR creation and merge events spread across 6 months", "✅"),
+            ("2.3", "Script release tag creation (releases = deployments)", "✅"),
+            ("2.4", "Inject ~15% failure releases (naming: vX.Y.Z-hotfix)", "✅"),
+        ]),
+        ("Phase 3 — Jira Simulation", [
+            ("3.1", "Write jira_sim.py — create stories linked to feature branches", "✅"),
+            ("3.2", "Simulate ticket transitions with backdated timestamps", "✅"),
+            ("3.3", "Create incident tickets triggered by failure releases", "✅"),
+            ("3.4", "Transition incidents to Resolved (simulates MTTR)", "✅"),
+            ("3.5", "Run run_simulation.py orchestrator and validate data", "✅"),
+        ]),
+        ("Phase 4 — Dashboard Core", [
+            ("4.1", "Build index.html skeleton with 4 metric panels", "✅"),
+            ("4.2", "Write js/api.js — GitHub + Jira API fetch functions", "✅"),
+            ("4.3", "Write proxy/server.py — local proxy to handle Jira CORS + auth", "✅"),
+            ("4.4", "Write js/metrics.js — compute all 4 DORA metrics from raw API data", "✅"),
+            ("4.5", "Write js/charts.js — Chart.js line/bar charts", "✅"),
+            ("4.6", "Implement weekly / monthly toggle", "✅"),
+        ]),
+        ("Phase 5 — DORA Classification & Polish", [
+            ("5.1", "Add DORA performance band overlays (Elite / High / Medium / Low) per metric", "✅"),
+            ("5.2", "Add summary scorecard showing current classification per metric", "✅"),
+            ("5.3", "Add date range picker", "✅"),
+            ("5.4", "Style and polish (css/style.css)", "✅"),
+            ("5.5", "Deploy dashboard + proxy to Oracle VM (nginx + systemd)", "⬜"),
+            ("5.6", "Write README.md with setup and run instructions", "⬜"),
+        ]),
+    ]
+
+    for phase_title, tasks in phases:
+        story.append(Paragraph(phase_title, S["h2"]))
+        rows = [["#", "Task", "Status"]]
+        for num, desc, status in tasks:
+            rows.append([num, desc, status_badge(status)])
+        t = Table(rows, colWidths=[1.2*cm, 13.3*cm, 2*cm])
+        style = [
+            ("BACKGROUND", (0, 0), (-1, 0), BRAND),
+            ("TEXTCOLOR",  (0, 0), (-1, 0), colors.white),
+            ("FONTNAME",   (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE",   (0, 0), (-1, -1), 9),
+            ("FONTNAME",   (0, 1), (-1, -1), "Helvetica"),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_GREY]),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ]
+        t.setStyle(TableStyle(style))
+        story.append(t)
+        story.append(Spacer(1, 10))
+
+    # Summary bar
+    total = sum(len(tasks) for _, tasks in phases)
+    done  = sum(1 for _, tasks in phases for _, _, s in tasks if s == "✅")
+    story += section("Overall Progress", [
+        colored_table(
+            [
+                ["Total Tasks", "Complete", "Pending", "% Done"],
+                [str(total), str(done), str(total - done), f"{done/total*100:.0f}%"],
+            ],
+            [4*cm, 4*cm, 4*cm, 4.5*cm]
+        ),
+    ])
+
+    doc.build(story)
+    print(f"  ✓ {path}")
+
+
 if __name__ == "__main__":
-    print("Generating Phase 0 architecture documents...")
+    print("Generating architecture + status documents...")
     doc_01()
     doc_02()
     doc_03()
     doc_04()
+    doc_status()
     print("Done. All PDFs written to docs/")

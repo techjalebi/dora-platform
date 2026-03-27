@@ -10,9 +10,10 @@ __pycache__/
 dist/
 build/
 
-# IDE
+# IDE / Claude Code
 .vscode/
 .idea/
+.claude/
 
 # OS
 .DS_Store
