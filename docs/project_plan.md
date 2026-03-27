@@ -1,6 +1,6 @@
 # DORA Reporting Platform — Project Plan
 
-Last updated: 2026-03-25
+Last updated: 2026-03-27
 
 ## Legend
 - ✅ Complete
@@ -71,5 +71,5 @@ Last updated: 2026-03-25
 | 5.2 | Add summary scorecard showing current classification per metric | ✅ |
 | 5.3 | Add date range picker | ✅ |
 | 5.4 | Style and polish (`css/style.css`) | ✅ |
-| 5.5 | Deploy dashboard + proxy to Oracle VM (nginx + systemd) | 🔄 |
-| 5.6 | Write `README.md` with setup and run instructions | ⬜ |
+| 5.5 | Deploy dashboard + proxy to Oracle VM (nginx + systemd) | ✅ |
+| 5.6 | Write `README.md` with setup and run instructions | ✅ |
