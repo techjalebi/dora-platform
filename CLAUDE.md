@@ -125,4 +125,4 @@ SIM_FAILURE_RATE=0.15
 
 ## Build Plan Status
 
-Tracked in [`docs/project_plan.md`](docs/project_plan.md). Phases 0–4 complete; Phase 5 in progress (5.5 Oracle VM deploy + 5.6 README pending).
+Tracked in [`docs/project_plan.md`](docs/project_plan.md). All phases 0–5 complete. Live at **https://dora.techjalebi.com**.
