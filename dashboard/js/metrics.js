@@ -63,7 +63,7 @@ function computeDeploymentFrequency(releaseMap, granularity, rangeStart, rangeEn
 
   return {
     labels: periods.map(p => formatLabel(p, granularity)),
-    values: counts,
+    values: counts.map(c => c > 0 ? c : null),
   };
 }
 

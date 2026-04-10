@@ -37,9 +37,12 @@ function updateScorecard(dfData, ltData, cfrData, mttrData) {
     card.style.borderColor = band ? colours[band] : '';
   }
 
-  render('df',   'df',   dfData.values.map((v, _) =>
-         v !== null ? dfWeeklyRate(v, granularity) : null),
-         v => v >= 1 ? v.toFixed(1) + '/wk' : (v * 7).toFixed(1) + '/mo');
+  const dfDisplay = granularity === 'weekly'
+    ? v => v.toFixed(1) + '/wk'
+    : v => (v * 4.33).toFixed(1) + '/mo';
+  document.getElementById('sub-df').textContent =
+    granularity === 'weekly' ? 'deployments / week' : 'deployments / month';
+  render('df', 'df', dfData.values.map(v => v !== null ? dfWeeklyRate(v, granularity) : null), dfDisplay);
 
   render('lt',   'lt',   ltData.values,  v => v.toFixed(1) + 'd');
   render('cfr',  'cfr',  cfrData.values, v => v.toFixed(1) + '%');
