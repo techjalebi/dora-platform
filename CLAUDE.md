@@ -76,7 +76,7 @@ Both are idempotent — jira_sim.py skips issues whose summaries already exist.
 
 - **No framework, no build step** on the dashboard — plain `fetch()`, Chart.js + flatpickr via CDN
 - **Backdated GitHub data**: simulation uses `GIT_AUTHOR_DATE` / `GIT_COMMITTER_DATE` env vars; GitHub release `published_at` timestamps cannot be backdated via the API — they all reflect when the sim ran
-- **Simulated date reconstruction**: `dashboard/js/config.js` stores `SIM_START` and `DEPLOY_INTERVAL_DAYS`; `api.js:buildReleaseMap()` reconstructs each release's simulated date from its sort index — same formula as `github_sim.py`
+- **Simulated date reconstruction**: `dashboard/js/config.js` stores `SIM_START` and `MONTHLY_DEPLOY_COUNTS` (array of `[year, month, count]`); `api.js:buildReleaseMap()` distributes releases evenly within each month per those targets — Nov=15, Dec=5, others=10. To reshape the DF chart, change `MONTHLY_DEPLOY_COUNTS` (must sum to total releases = 60)
 - **Failure release convention**: releases named `vX.Y.Z-hotfix` are failed deployments; Incident tickets reference them via the `Linked Release` custom field
 - **Jira MTTR storage**: Jira Cloud cannot backdate transition timestamps — `SimulatedCreated` and `SimulatedResolved` ISO strings are stored in the Incident description; `api.js:parseDescriptionDate()` extracts them
 - **Jira search API**: use `POST /rest/api/3/search/jql` with `nextPageToken` pagination — the old `GET /rest/api/3/search` returns HTTP 410 Gone on Jira Cloud
