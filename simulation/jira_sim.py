@@ -160,19 +160,23 @@ def transition(issue_key: str, name: str, trans_map: dict[str, str]) -> bool:
 def existing_summaries() -> set[str]:
     """Fetch all issue summaries already in the project (to avoid duplicates)."""
     summaries = set()
-    start = 0
+    next_page_token = None
     while True:
-        jql = urllib.parse.quote(f"project={JIRA_PROJECT_KEY}")
-        r = jira("GET",
-                 f"/search?jql={jql}&maxResults=100"
-                 f"&startAt={start}&fields=summary")
+        body = {
+            "jql": f"project={JIRA_PROJECT_KEY}",
+            "fields": ["summary"],
+            "maxResults": 100,
+        }
+        if next_page_token:
+            body["nextPageToken"] = next_page_token
+        r = jira("POST", "/search/jql", body)
         issues = r.get("issues", [])
         if not issues:
             break
         for i in issues:
             summaries.add(i["fields"]["summary"])
-        start += len(issues)
-        if start >= r.get("total", 0):
+        next_page_token = r.get("nextPageToken")
+        if not next_page_token or len(issues) < 100:
             break
     return summaries
 
@@ -250,9 +254,8 @@ def fetch_github_data() -> tuple[list[dict], list[dict]]:
             "done_date":         release_date,
         })
 
-        # Advance to next release roughly every 2 PRs
-        if (idx + 1) % 2 == 0:
-            current_rel = next(rel_iter, current_rel)
+        # Advance to next release every PR so all releases get coverage
+        current_rel = next(rel_iter, current_rel)
 
     print(f"  Mapped {len(stories)} PRs to releases")
     return releases, stories

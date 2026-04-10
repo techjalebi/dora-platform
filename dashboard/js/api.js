@@ -38,13 +38,21 @@ async function jiraSearchAll(jql, fields) {
 // period. We reconstruct dates from release creation order (ascending by id).
 
 function buildReleaseMap(releases) {
-  // releases: sorted ascending by creation order (index = position in sort)
-  const map = {};   // tag -> { date: Date, isHotfix: bool }
+  // Build an ordered list of simulated dates from monthly deploy targets.
+  // Releases are evenly spaced within each month per CONFIG.MONTHLY_DEPLOY_COUNTS.
+  const simDates = [];
+  for (const [year, month, count] of CONFIG.MONTHLY_DEPLOY_COUNTS) {
+    const start = new Date(Date.UTC(year, month,     1, 9, 0, 0));
+    const end   = new Date(Date.UTC(year, month + 1, 1, 9, 0, 0));
+    const step  = (end - start) / (count + 1);
+    for (let k = 1; k <= count; k++) {
+      simDates.push(new Date(start.getTime() + k * step));
+    }
+  }
+
+  const map = {};
   releases.forEach((rel, i) => {
-    const simDate = new Date(
-      CONFIG.SIM_START.getTime() +
-      (i + 1) * CONFIG.DEPLOY_INTERVAL_DAYS * 24 * 60 * 60 * 1000
-    );
+    const simDate = simDates[i] || simDates[simDates.length - 1];
     map[rel.tag_name] = {
       date:     simDate,
       isHotfix: rel.tag_name.endsWith('-hotfix'),

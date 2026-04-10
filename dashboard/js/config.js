@@ -18,9 +18,19 @@ const CONFIG = {
 
   // Simulated timeline reconstruction
   // GitHub release published_at timestamps are all "today" (can't be backdated).
-  // We reconstruct simulated dates from release creation order using the same
-  // formula as github_sim.py: date = SIM_START + index * DEPLOY_INTERVAL_DAYS
-  SIM_START:            new Date('2025-09-01T09:00:00Z'),
-  SIM_END:              new Date('2026-03-01T18:00:00Z'),
-  DEPLOY_INTERVAL_DAYS: 3,   // 7 // DEPLOYS_PER_WEEK(2)
+  // Releases are distributed across months per MONTHLY_DEPLOY_COUNTS (must sum to
+  // total releases). Evenly spaced within each month.
+  SIM_START: new Date('2025-09-01T09:00:00Z'),
+  SIM_END:   new Date('2026-03-01T18:00:00Z'),
+
+  // Monthly deploy targets — change these to reshape the deployment frequency chart
+  // Format: [year, month (0-based), count]
+  MONTHLY_DEPLOY_COUNTS: [
+    [2025,  8, 10],   // Sep 2025
+    [2025,  9, 10],   // Oct 2025
+    [2025, 10, 15],   // Nov 2025
+    [2025, 11,  5],   // Dec 2025
+    [2026,  0, 10],   // Jan 2026
+    [2026,  1, 10],   // Feb 2026
+  ],
 };
