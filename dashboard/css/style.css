@@ -352,6 +352,30 @@ footer {
 
 @media (max-width: 600px) {
   .scorecard { grid-template-columns: 1fr; }
-  .header-content { padding: 0 16px; }
-  main { padding: 16px 16px 40px; }
+  main       { padding: 16px 16px 40px; }
+
+  /* Header — CSS grid so logo+toggle share row 1 */
+  .header-content {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    height: auto;
+    padding: 10px 16px;
+    gap: 6px 12px;
+    align-items: center;
+  }
+  /* Dissolve .controls so its children become direct grid items */
+  .controls   { display: contents; }
+
+  /* Row 1: logo (col 1) · toggle (col 2) */
+  .logo       { grid-column: 1; grid-row: 1; min-width: 0; }
+  .logo h1    { font-size: 1rem; }
+  .repo-label { display: none; }
+  .toggle-group { grid-column: 2; grid-row: 1; }
+
+  /* Row 2: date range full width */
+  .date-range { grid-column: 1 / -1; grid-row: 2; }
+  .date-range input[type="text"] { width: 90px; font-size: .75rem; }
+
+  /* Row 3: status pill full width */
+  .status-pill { grid-column: 1 / -1; grid-row: 3; }
 }
